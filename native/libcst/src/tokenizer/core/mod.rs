@@ -113,6 +113,7 @@ pub enum TokType {
     Newline,
     Indent,
     Dedent,
+    UnmatchedDedent,
     Async,
     Await,
     FStringStart,
@@ -303,9 +304,11 @@ impl<'t> TokState<'t> {
             }
         }
 
-        // This will never consume a token, but it may set blank_line and it may set
+        // This will only consume unmatched dedent tokens, but it also may set blank_line and it may set
         // pending_indents.
-        self.consume_bol_whitespace()?;
+        if let Some(t) = self.consume_bol_whitespace()? {
+            return Ok(t)
+        }
 
         // Return pending indents/dedents
         if let Some(t) = self.process_pending_indents() {
@@ -486,10 +489,10 @@ impl<'t> TokState<'t> {
 
     /// Consumes the whitespace (and comments) at the beginning of the line. May emit an error. Will
     /// mutate `pending_indents`, so you must check `pending_indents` after calling this.
-    fn consume_bol_whitespace(&mut self) -> Result<(), TokError<'t>> {
+    fn consume_bol_whitespace(&mut self) -> Result<Option<TokType>, TokError<'t>> {
         self.blank_line = false;
         if !self.at_bol {
-            return Ok(());
+            return Ok(None);
         }
 
         let mut col = 0; // column where tab counts as 8 characters
@@ -537,7 +540,7 @@ impl<'t> TokState<'t> {
         );
 
         if self.blank_line || !self.paren_stack.is_empty() {
-            return Ok(());
+            return Ok(None);
         }
 
         let prev_col = self.indent_stack.last().unwrap_or(&0);
@@ -575,7 +578,7 @@ impl<'t> TokState<'t> {
                     self.alt_indent_stack.pop();
                 }
                 if col != *self.indent_stack.last().unwrap_or(&0) {
-                    return Err(TokError::Dedent);
+                    return Ok(Some(TokType::UnmatchedDedent));
                 }
                 if altcol != *self.alt_indent_stack.last().unwrap_or(&0) {
                     return Err(TokError::TabSpace);
@@ -583,7 +586,7 @@ impl<'t> TokState<'t> {
             }
         }
 
-        Ok(())
+        Ok(None)
     }
 
     fn process_pending_indents(&mut self) -> Option<TokType> {

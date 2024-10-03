@@ -93,6 +93,34 @@ class BaseStatement(CSTNode, ABC):
     __slots__ = ()
 
 
+@add_slots
+@dataclass(frozen=True)
+class UnmatchedDedent(CSTNode):
+    """
+    Marks the location of a dedent token with no matching indent peer. This
+    is an Indentation error in regular Python, and such nodes need to be
+    removed via some constraint rule to fix syntax errors.
+    """
+
+    #: Sequence of empty lines appearing before this simple statement line.
+    leading_lines: Sequence[EmptyLine] = ()
+
+    def _visit_and_replace_children(self, visitor: CSTVisitorT) -> "UnmatchedDedent":
+        return UnmatchedDedent(
+            leading_lines=visit_sequence(
+                self, "leading_lines", self.leading_lines, visitor
+            )
+        )
+
+    def _codegen_impl(
+        self, state: CodegenState, default_semicolon: bool = False
+    ) -> None:
+        for ll in self.leading_lines:
+            ll._codegen(state)
+        with state.record_syntactic_position(self):
+            state.add_token("<negative-dedent>")
+
+
 class BaseSmallStatement(CSTNode, ABC):
     """
     Encapsulates a small statement, like ``del`` or ``pass``, and optionally adds a
@@ -2815,6 +2843,70 @@ class Match(BaseCompoundStatement):
                 f._codegen(state)
 
             state.decrease_indent()
+
+
+@add_slots
+@dataclass(frozen=True)
+class StrayIndentedBlock(BaseCompoundStatement):
+    """
+    Marks a section with extra indentation. This is an Indentation error in
+    regular Python, and such nodes need to be removed via some constraint rule
+    to fix syntax errors.
+    """
+
+    body: Sequence[BaseStatement]
+
+    indent: Optional[str] = None
+
+    leading_lines: Sequence[EmptyLine] = ()
+
+    footer: Sequence[EmptyLine] = ()
+
+    def _validate(self) -> None:
+        indent = self.indent
+        if indent is not None:
+            if len(indent) == 0:
+                raise CSTValidationError(
+                    "An indented block must have a non-zero width indent."
+                )
+            if _INDENT_WHITESPACE_RE.fullmatch(indent) is None:
+                raise CSTValidationError(
+                    "An indent must be composed of only whitespace characters."
+                )
+
+    def _visit_and_replace_children(self, visitor: CSTVisitorT) -> "StrayIndentedBlock":
+        return StrayIndentedBlock(
+            body=visit_body_sequence(self, "body", self.body, visitor),
+            indent=self.indent,
+            leading_lines=visit_sequence(
+                self, "leading_lines", self.leading_lines, visitor
+            ),
+            footer=visit_sequence(self, "footer", self.footer, visitor),
+        )
+
+    def _codegen_impl(self, state: CodegenState) -> None:
+        for ll in self.leading_lines:
+            ll._codegen(state)
+
+        indent = self.indent
+        state.increase_indent(state.default_indent if indent is None else indent)
+
+        if self.body:
+            with state.record_syntactic_position(
+                self, start_node=self.body[0], end_node=self.body[-1]
+            ):
+                for stmt in self.body:
+                    stmt._codegen(state)
+        else:
+            state.add_indent_tokens()
+            with state.record_syntactic_position(self):
+                state.add_token("pass")
+            state.add_token(state.default_newline)
+
+        for f in self.footer:
+            f._codegen(state)
+
+        state.decrease_indent()
 
 
 @add_slots

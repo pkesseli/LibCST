@@ -17,7 +17,7 @@ use peg::str::LineCol;
 use peg::{parser, Parse, ParseElem, RuleResult};
 use TokType::{
     Async, Await as AWAIT, Dedent, EndMarker, FStringEnd, FStringStart, FStringString, Indent,
-    Name as NameTok, Newline as NL, Number, String as STRING,
+    Name as NameTok, Newline as NL, Number, String as STRING
 };
 
 pub type Result<'a, T> = std::result::Result<T, ParserError<'a>>;
@@ -116,6 +116,7 @@ parser! {
             / s:simple_stmts() {
                     Statement::Simple(make_simple_statement_line(s))
             }
+            / t:tok(TokType::UnmatchedDedent, "UNMATCHEDDEDENT") { Statement::UnmatchedDedent(UnmatchedDedent { tok: t }) }
 
         rule simple_stmts() -> SimpleStatementParts<'input, 'a>
             = first_tok:&_ stmts:separated_trailer(<simple_stmt()>, <lit(";")>) nl:tok(NL, "NEWLINE") {
@@ -159,7 +160,8 @@ parser! {
             / &lit("try") t:try_stmt() { CompoundStatement::Try(t) }
             / &lit("try") t:try_star_stmt() { CompoundStatement::TryStar(t) }
             / &lit("while") w:while_stmt() { CompoundStatement::While(w) }
-            / m:match_stmt() { CompoundStatement::Match(m) }
+            / &lit("match") m:match_stmt() { CompoundStatement::Match(m) }
+            / s:stray_indented_block() { CompoundStatement::StrayIndentedBlock(s) }
 
         // Simple statements
 
@@ -580,6 +582,14 @@ parser! {
             = kw:lit("match") subject:subject_expr() col:lit(":") tok(NL, "NEWLINE")
                 i:tok(Indent, "INDENT") cases:case_block()+ d:tok(Dedent, "DEDENT") {
                     make_match(kw, subject, col, i, cases, d)
+            }
+
+        rule stray_indented_block() -> StrayIndentedBlock<'input, 'a>
+            = i:tok(Indent, "INDENT") s:statements() d:tok(Dedent, "DEDENT") {
+                    make_stray_indented_block(i, s, d)
+            }
+            / i:tok(Indent, "INDENT") s:stray_indented_block() d:tok(Dedent, "DEDENT") {
+                s
             }
 
         rule subject_expr() -> Expression<'input, 'a>
@@ -3139,6 +3149,19 @@ fn make_match<'input, 'a>(
         colon_tok,
         indent_tok,
         dedent_tok,
+    }
+}
+
+fn make_stray_indented_block<'input, 'a>(
+    indent: TokenRef<'input, 'a>,
+    statements: Vec<Statement<'input, 'a>>,
+    dedent: TokenRef<'input, 'a>,
+) -> StrayIndentedBlock<'input, 'a> {
+    StrayIndentedBlock {
+        body: statements,
+        indent: Default::default(),
+        indent_tok: indent,
+        dedent_tok: dedent,
     }
 }
 

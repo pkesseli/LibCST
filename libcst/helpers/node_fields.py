@@ -8,7 +8,7 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 
-from libcst import IndentedBlock, Module
+from libcst import IndentedBlock, Module, StrayIndentedBlock
 from libcst._nodes.deep_equals import deep_equals
 
 if TYPE_CHECKING:
@@ -40,7 +40,11 @@ def is_whitespace_node_field(node: CSTNode, field: dataclasses.Field[CSTNode]) -
         "footer",
     ]:
         return True
-    if isinstance(node, IndentedBlock) and field.name == "indent":
+    if (isinstance(node, StrayIndentedBlock)) and field.name == "footer":
+        return True
+    if (
+        isinstance(node, IndentedBlock) or isinstance(node, StrayIndentedBlock)
+    ) and field.name == "indent":
         return True
     return False
 

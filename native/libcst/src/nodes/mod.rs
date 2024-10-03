@@ -17,8 +17,8 @@ pub use statement::{
     MatchKeywordElement, MatchList, MatchMapping, MatchMappingElement, MatchOr, MatchOrElement,
     MatchPattern, MatchSequence, MatchSequenceElement, MatchSingleton, MatchStar, MatchTuple,
     MatchValue, NameItem, Nonlocal, OrElse, Pass, Raise, Return, SimpleStatementLine,
-    SimpleStatementSuite, SmallStatement, StarrableMatchSequenceElement, Statement, Suite, Try,
-    TryStar, While, With, WithItem,
+    SimpleStatementSuite, SmallStatement, StarrableMatchSequenceElement, Statement, Suite, StrayIndentedBlock,
+    Try, TryStar, While, With, WithItem,
 };
 
 pub(crate) mod expression;
@@ -111,13 +111,15 @@ pub(crate) mod deflated {
         DeflatedMatchSequenceElement as MatchSequenceElement,
         DeflatedMatchSingleton as MatchSingleton, DeflatedMatchStar as MatchStar,
         DeflatedMatchTuple as MatchTuple, DeflatedMatchValue as MatchValue,
-        DeflatedNameItem as NameItem, DeflatedNonlocal as Nonlocal, DeflatedOrElse as OrElse,
+        DeflatedNameItem as NameItem, DeflatedUnmatchedDedent as UnmatchedDedent,
+        DeflatedNonlocal as Nonlocal, DeflatedOrElse as OrElse,
         DeflatedParamSpec as ParamSpec, DeflatedPass as Pass, DeflatedRaise as Raise,
         DeflatedReturn as Return, DeflatedSimpleStatementLine as SimpleStatementLine,
         DeflatedSimpleStatementSuite as SimpleStatementSuite,
         DeflatedSmallStatement as SmallStatement,
         DeflatedStarrableMatchSequenceElement as StarrableMatchSequenceElement,
-        DeflatedStatement as Statement, DeflatedSuite as Suite, DeflatedTry as Try,
+        DeflatedStatement as Statement, DeflatedSuite as Suite,
+        DeflatedStrayIndentedBlock as StrayIndentedBlock, DeflatedTry as Try,
         DeflatedTryStar as TryStar, DeflatedTypeAlias as TypeAlias, DeflatedTypeParam as TypeParam,
         DeflatedTypeParameters as TypeParameters, DeflatedTypeVar as TypeVar,
         DeflatedTypeVarLike as TypeVarLike, DeflatedTypeVarTuple as TypeVarTuple,

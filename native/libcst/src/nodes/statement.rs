@@ -40,6 +40,7 @@ type TokenRef<'r, 'a> = &'r Token<'a>;
 pub enum Statement<'a> {
     Simple(SimpleStatementLine<'a>),
     Compound(CompoundStatement<'a>),
+    UnmatchedDedent(UnmatchedDedent<'a>),
 }
 
 impl<'a> WithLeadingLines<'a> for Statement<'a> {
@@ -47,6 +48,7 @@ impl<'a> WithLeadingLines<'a> for Statement<'a> {
         match self {
             Self::Simple(s) => &mut s.leading_lines,
             Self::Compound(c) => c.leading_lines(),
+            Self::UnmatchedDedent(d) => &mut d.leading_lines,
         }
     }
 }
@@ -63,6 +65,7 @@ pub enum CompoundStatement<'a> {
     TryStar(TryStar<'a>),
     With(With<'a>),
     Match(Match<'a>),
+    StrayIndentedBlock(StrayIndentedBlock<'a>),
 }
 
 impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
@@ -77,6 +80,7 @@ impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
             Self::TryStar(t) => &mut t.leading_lines,
             Self::With(w) => &mut w.leading_lines,
             Self::Match(m) => &mut m.leading_lines,
+            Self::StrayIndentedBlock(s) => &mut s.leading_lines,
         }
     }
 }
@@ -253,6 +257,36 @@ pub struct SimpleStatementLine<'a> {
 
     pub(crate) first_tok: TokenRef<'a>,
     pub(crate) newline_tok: TokenRef<'a>,
+}
+
+#[cst_node]
+pub struct UnmatchedDedent<'a> {
+    /// Unmatched dedent token
+    pub(crate) tok: TokenRef<'a>,
+
+    /// Sequence of empty lines appearing before this unmatched dedent.
+    pub leading_lines: Vec<EmptyLine<'a>>,
+}
+impl<'r, 'a> DeflatedUnmatchedDedent<'r, 'a> {
+}
+impl<'a> Codegen<'a> for UnmatchedDedent<'a> {
+    fn codegen(&self, state: &mut CodegenState<'a>) {
+        for line in &self.leading_lines {
+            line.codegen(state);
+        }
+        state.add_token("<unmatched-dedent>");
+    }
+}
+impl<'r, 'a> Inflate<'a> for DeflatedUnmatchedDedent<'r, 'a> {
+    type Inflated = UnmatchedDedent<'a>;
+    fn inflate(self, config: &Config<'a>) -> Result<Self::Inflated> {
+        let leading_lines = parse_empty_lines(
+            config,
+            &mut (*self.tok).whitespace_before.borrow_mut(),
+            None,
+        )?;
+        Ok(Self::Inflated { leading_lines })
+    }
 }
 
 impl<'a> Codegen<'a> for SimpleStatementLine<'a> {
@@ -2446,6 +2480,20 @@ pub struct Match<'a> {
     pub(crate) dedent_tok: TokenRef<'a>,
 }
 
+#[cst_node]
+pub struct StrayIndentedBlock<'a> {
+    pub body: Vec<Statement<'a>>,
+
+    pub indent: Option<&'a str>,
+
+    pub leading_lines: Vec<EmptyLine<'a>>,
+
+    pub footer: Vec<EmptyLine<'a>>,
+
+    pub(crate) indent_tok: TokenRef<'a>,
+    pub(crate) dedent_tok: TokenRef<'a>,
+}
+
 impl<'a> Codegen<'a> for Match<'a> {
     fn codegen(&self, state: &mut CodegenState<'a>) {
         for l in &self.leading_lines {
@@ -2470,6 +2518,36 @@ impl<'a> Codegen<'a> for Match<'a> {
         for f in &self.footer {
             f.codegen(state);
         }
+        state.dedent();
+    }
+}
+
+impl<'a> Codegen<'a> for StrayIndentedBlock<'a> {
+    fn codegen(&self, state: &mut CodegenState<'a>) {
+        for l in &self.leading_lines {
+            l.codegen(state);
+        }
+
+        let indent = match self.indent {
+            Some(i) => i,
+            None => state.default_indent,
+        };
+        state.indent(indent);
+
+        if self.body.is_empty() {
+            state.add_indent();
+            state.add_token("pass");
+            state.add_token(state.default_newline);
+        } else {
+            for stmt in &self.body {
+                stmt.codegen(state);
+            }
+        }
+
+        for f in &self.footer {
+            f.codegen(state);
+        }
+
         state.dedent();
     }
 }
@@ -2508,6 +2586,33 @@ impl<'r, 'a> Inflate<'a> for DeflatedMatch<'r, 'a> {
             whitespace_before_colon,
             whitespace_after_colon,
             indent,
+            footer,
+        })
+    }
+}
+
+impl<'r, 'a> Inflate<'a> for DeflatedStrayIndentedBlock<'r, 'a> {
+    type Inflated = StrayIndentedBlock<'a>;
+    fn inflate(self, config: &Config<'a>) -> Result<Self::Inflated> {
+        let leading_lines = parse_empty_lines(
+            config,
+            &mut self.indent_tok.whitespace_before.borrow_mut(),
+            None,
+        )?;
+        let body = self.body.inflate(config)?;
+        let footer = parse_empty_lines(
+            config,
+            &mut (*self.dedent_tok).whitespace_after.borrow_mut(),
+            Some(self.indent_tok.whitespace_before.borrow().absolute_indent),
+        )?;
+        let mut indent = self.indent_tok.relative_indent;
+        if indent == Some(config.default_indent) {
+            indent = None;
+        }
+        Ok(Self::Inflated {
+            body,
+            indent,
+            leading_lines,
             footer,
         })
     }
