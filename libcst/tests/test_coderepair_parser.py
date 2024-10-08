@@ -299,9 +299,7 @@ try:
         )
 
     def test_stray_if(self) -> None:
-        self.assertRaises(
-            ParserSyntaxError,
-            self.__test_parse,
+        self.__test_parse(
             """
 value: int = 10
 if value > 50:
@@ -309,7 +307,61 @@ if value > 50:
     else:
     pass
 """,
-            "",
+            """Module(
+  body=[
+    SimpleStatementLine(
+      body=[
+        AnnAssign(
+          target=Name(
+            value='value',
+          ),
+          annotation=Annotation(
+            annotation=Name(
+              value='int',
+            ),
+          ),
+          value=Integer(
+            value='10',
+          ),
+        ),
+      ],
+    ),
+    If(
+      test=Comparison(
+        left=Name(
+          value='value',
+        ),
+        comparisons=[
+          ComparisonTarget(
+            operator=GreaterThan(),
+            comparator=Integer(
+              value='50',
+            ),
+          ),
+        ],
+      ),
+      body=IndentedBlock(
+        body=[
+          SimpleStatementLine(
+            body=[
+              Pass(),
+            ],
+          ),
+          Else(
+            body=SimpleStatementSuite(
+              body=[],
+            ),
+          ),
+          SimpleStatementLine(
+            body=[
+              Pass(),
+            ],
+          ),
+        ],
+      ),
+    ),
+  ],
+)""",
         )
 
     def __test_parse(self, code: str, expected_tree: str) -> None:

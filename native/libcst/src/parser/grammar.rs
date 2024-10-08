@@ -164,6 +164,7 @@ parser! {
             / s:stray_indented_block() { CompoundStatement::StrayIndentedBlock(s) }
             / s:except_block() { CompoundStatement::StrayCatch(s) }
             / s:finally_block() { CompoundStatement::StrayFinally(s) }
+            / s:else_block() { CompoundStatement::StrayElse(s) }
 
         // Simple statements
 
@@ -311,6 +312,11 @@ parser! {
             }
             / s:simple_stmts() {
                 make_simple_statement_suite(s)
+            }
+            / n:tok(NL, "NEWLINE") {
+                Suite::SimpleStatementSuite(
+                    SimpleStatementSuite { body: Vec::new(), first_tok: n, newline_tok: n }
+                )
             }
 
         rule decorators() -> Vec<Decorator<'input, 'a>>
@@ -1770,7 +1776,7 @@ fn _make_simple_statement<'input, 'a>(
     Vec<SmallStatement<'input, 'a>>,
     TokenRef<'input, 'a>,
 ) {
-    let mut body = vec![];
+    let mut body: Vec<SmallStatement<'input, 'a>> = vec![];
 
     let mut current = parts.first_statement;
     for (semi, next) in parts.rest {

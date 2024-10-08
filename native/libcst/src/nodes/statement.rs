@@ -68,6 +68,7 @@ pub enum CompoundStatement<'a> {
     StrayIndentedBlock(StrayIndentedBlock<'a>),
     StrayCatch(ExceptHandler<'a>),
     StrayFinally(Finally<'a>),
+    StrayElse(Else<'a>),
 }
 
 impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
@@ -85,6 +86,7 @@ impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
             Self::StrayIndentedBlock(s) => &mut s.leading_lines,
             Self::StrayCatch(s) => &mut s.leading_lines,
             Self::StrayFinally(s) => &mut s.leading_lines,
+            Self::StrayElse(s) => &mut s.leading_lines,
         }
     }
 }
