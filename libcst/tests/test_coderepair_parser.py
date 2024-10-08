@@ -250,6 +250,54 @@ try:
 )""",
         )
 
+    def test_stray_finally(self) -> None:
+        self.__test_parse(
+            """
+try:
+    value: int = 10
+    finally:
+        pass
+""",
+            """Module(
+  body=[
+    Try(
+      body=IndentedBlock(
+        body=[
+          SimpleStatementLine(
+            body=[
+              AnnAssign(
+                target=Name(
+                  value='value',
+                ),
+                annotation=Annotation(
+                  annotation=Name(
+                    value='int',
+                  ),
+                ),
+                value=Integer(
+                  value='10',
+                ),
+              ),
+            ],
+          ),
+          Finally(
+            body=IndentedBlock(
+              body=[
+                SimpleStatementLine(
+                  body=[
+                    Pass(),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
+)""",
+        )
+
     def test_stray_if(self) -> None:
         self.assertRaises(
             ParserSyntaxError,

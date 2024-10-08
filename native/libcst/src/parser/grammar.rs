@@ -163,6 +163,7 @@ parser! {
             / &lit("match") m:match_stmt() { CompoundStatement::Match(m) }
             / s:stray_indented_block() { CompoundStatement::StrayIndentedBlock(s) }
             / s:except_block() { CompoundStatement::StrayCatch(s) }
+            / s:finally_block() { CompoundStatement::StrayFinally(s) }
 
         // Simple statements
 
