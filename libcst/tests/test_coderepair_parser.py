@@ -203,16 +203,51 @@ def invalid() -> int:
         )
 
     def test_stray_except(self) -> None:
-        self.assertRaises(
-            ParserSyntaxError,
-            self.__test_parse,
+        self.__test_parse(
             """
 try:
     value: int = 10
     except:
         pass
 """,
-            "",
+            """Module(
+  body=[
+    Try(
+      body=IndentedBlock(
+        body=[
+          SimpleStatementLine(
+            body=[
+              AnnAssign(
+                target=Name(
+                  value='value',
+                ),
+                annotation=Annotation(
+                  annotation=Name(
+                    value='int',
+                  ),
+                ),
+                value=Integer(
+                  value='10',
+                ),
+              ),
+            ],
+          ),
+          ExceptHandler(
+            body=IndentedBlock(
+              body=[
+                SimpleStatementLine(
+                  body=[
+                    Pass(),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
+)""",
         )
 
     def test_stray_if(self) -> None:

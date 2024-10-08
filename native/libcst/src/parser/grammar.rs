@@ -162,6 +162,7 @@ parser! {
             / &lit("while") w:while_stmt() { CompoundStatement::While(w) }
             / &lit("match") m:match_stmt() { CompoundStatement::Match(m) }
             / s:stray_indented_block() { CompoundStatement::StrayIndentedBlock(s) }
+            / s:except_block() { CompoundStatement::StrayCatch(s) }
 
         // Simple statements
 
@@ -538,8 +539,8 @@ parser! {
         // Try statement
 
         rule try_stmt() -> Try<'input, 'a>
-            = kw:lit("try") lit(":") b:block() f:finally_block() {
-                make_try(kw, b, vec![], None, Some(f))
+            = kw:lit("try") lit(":") b:block() f:finally_block()? {
+                make_try(kw, b, vec![], None, f)
             }
             / kw:lit("try") lit(":") b:block() ex:except_block()+ el:else_block()?
                 f:finally_block()? {

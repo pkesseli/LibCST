@@ -66,6 +66,7 @@ pub enum CompoundStatement<'a> {
     With(With<'a>),
     Match(Match<'a>),
     StrayIndentedBlock(StrayIndentedBlock<'a>),
+    StrayCatch(ExceptHandler<'a>),
 }
 
 impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
@@ -81,6 +82,7 @@ impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
             Self::With(w) => &mut w.leading_lines,
             Self::Match(m) => &mut m.leading_lines,
             Self::StrayIndentedBlock(s) => &mut s.leading_lines,
+            Self::StrayCatch(s) => &mut s.leading_lines,
         }
     }
 }

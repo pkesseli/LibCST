@@ -1039,15 +1039,6 @@ class Try(BaseCompoundStatement):
     whitespace_before_colon: SimpleWhitespace = SimpleWhitespace.field("")
 
     def _validate(self) -> None:
-        if len(self.handlers) == 0 and self.finalbody is None:
-            raise CSTValidationError(
-                "A Try statement must have at least one ExceptHandler or Finally"
-            )
-        if len(self.handlers) == 0 and self.orelse is not None:
-            raise CSTValidationError(
-                "A Try statement must have at least one ExceptHandler in order "
-                + "to have an Else."
-            )
         # Check bare excepts are always at the last position
         if any(handler.type is None for handler in self.handlers[:-1]):
             raise CSTValidationError("The bare except: handler must be the last one.")
