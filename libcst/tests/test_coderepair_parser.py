@@ -364,6 +364,233 @@ if value > 50:
 )""",
         )
 
+    def test_empty_with(self) -> None:
+        self.__test_parse(
+            """
+with open('file_path', 'w') as file:
+file.write('hello world !')
+""",
+            """Module(
+  body=[
+    With(
+      items=[
+        WithItem(
+          item=Call(
+            func=Name(
+              value='open',
+            ),
+            args=[
+              Arg(
+                value=SimpleString(
+                  value="'file_path'",
+                ),
+              ),
+              Arg(
+                value=SimpleString(
+                  value="'w'",
+                ),
+              ),
+            ],
+          ),
+          asname=AsName(
+            name=Name(
+              value='file',
+            ),
+          ),
+        ),
+      ],
+      body=SimpleStatementSuite(
+        body=[],
+      ),
+    ),
+    SimpleStatementLine(
+      body=[
+        Expr(
+          value=Call(
+            func=Attribute(
+              value=Name(
+                value='file',
+              ),
+              attr=Name(
+                value='write',
+              ),
+            ),
+            args=[
+              Arg(
+                value=SimpleString(
+                  value="'hello world !'",
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  ],
+)""",
+        )
+
+    def test_empty_match(self) -> None:
+        self.__test_parse(
+            """
+num: int = 10
+match num:
+case 1:
+    pass
+""",
+            """Module(
+  body=[
+    SimpleStatementLine(
+      body=[
+        AnnAssign(
+          target=Name(
+            value='num',
+          ),
+          annotation=Annotation(
+            annotation=Name(
+              value='int',
+            ),
+          ),
+          value=Integer(
+            value='10',
+          ),
+        ),
+      ],
+    ),
+    Match(
+      subject=Name(
+        value='num',
+      ),
+      cases=[],
+    ),
+    MatchCase(
+      pattern=MatchValue(
+        value=Integer(
+          value='1',
+        ),
+      ),
+      body=IndentedBlock(
+        body=[
+          SimpleStatementLine(
+            body=[
+              Pass(),
+            ],
+          ),
+        ],
+      ),
+    ),
+  ],
+)""",
+        )
+
+    def test_stray_case(self) -> None:
+        self.__test_parse(
+            """
+num: int = 10
+match num:
+    case 1:
+        pass
+case 2:
+    pass
+        case 3:
+            pass
+    case _:
+        pass
+""",
+            """Module(
+  body=[
+    SimpleStatementLine(
+      body=[
+        AnnAssign(
+          target=Name(
+            value='num',
+          ),
+          annotation=Annotation(
+            annotation=Name(
+              value='int',
+            ),
+          ),
+          value=Integer(
+            value='10',
+          ),
+        ),
+      ],
+    ),
+    Match(
+      subject=Name(
+        value='num',
+      ),
+      cases=[
+        MatchCase(
+          pattern=MatchValue(
+            value=Integer(
+              value='1',
+            ),
+          ),
+          body=IndentedBlock(
+            body=[
+              SimpleStatementLine(
+                body=[
+                  Pass(),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+    MatchCase(
+      pattern=MatchValue(
+        value=Integer(
+          value='2',
+        ),
+      ),
+      body=IndentedBlock(
+        body=[
+          SimpleStatementLine(
+            body=[
+              Pass(),
+            ],
+          ),
+          StrayIndentedBlock(
+            body=[
+              MatchCase(
+                pattern=MatchValue(
+                  value=Integer(
+                    value='3',
+                  ),
+                ),
+                body=IndentedBlock(
+                  body=[
+                    SimpleStatementLine(
+                      body=[
+                        Pass(),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          MatchCase(
+            pattern=MatchAs(),
+            body=IndentedBlock(
+              body=[
+                SimpleStatementLine(
+                  body=[
+                    Pass(),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
+)""",
+        )
+
     def __test_parse(self, code: str, expected_tree: str) -> None:
         source_tree: Module = parse_module(code)
         actual_tree: str = dump(source_tree)

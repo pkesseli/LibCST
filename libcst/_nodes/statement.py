@@ -2778,9 +2778,6 @@ class Match(BaseCompoundStatement):
     footer: Sequence[EmptyLine] = ()
 
     def _validate(self) -> None:
-        if len(self.cases) == 0:
-            raise CSTValidationError("A match statement must have at least one case.")
-
         indent = self.indent
         if indent is not None:
             if len(indent) == 0:

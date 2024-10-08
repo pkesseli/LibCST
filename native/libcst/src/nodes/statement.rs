@@ -69,6 +69,7 @@ pub enum CompoundStatement<'a> {
     StrayCatch(ExceptHandler<'a>),
     StrayFinally(Finally<'a>),
     StrayElse(Else<'a>),
+    StrayCase(MatchCase<'a>),
 }
 
 impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
@@ -87,6 +88,7 @@ impl<'a> WithLeadingLines<'a> for CompoundStatement<'a> {
             Self::StrayCatch(s) => &mut s.leading_lines,
             Self::StrayFinally(s) => &mut s.leading_lines,
             Self::StrayElse(s) => &mut s.leading_lines,
+            Self::StrayCase(s) => &mut s.leading_lines,
         }
     }
 }

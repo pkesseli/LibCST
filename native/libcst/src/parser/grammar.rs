@@ -165,6 +165,7 @@ parser! {
             / s:except_block() { CompoundStatement::StrayCatch(s) }
             / s:finally_block() { CompoundStatement::StrayFinally(s) }
             / s:else_block() { CompoundStatement::StrayElse(s) }
+            / s:case_block() { CompoundStatement::StrayCase(s) }
 
         // Simple statements
 
@@ -590,6 +591,9 @@ parser! {
             = kw:lit("match") subject:subject_expr() col:lit(":") tok(NL, "NEWLINE")
                 i:tok(Indent, "INDENT") cases:case_block()+ d:tok(Dedent, "DEDENT") {
                     make_match(kw, subject, col, i, cases, d)
+            }
+            / kw:lit("match") subject:subject_expr() col:lit(":") nl:tok(NL, "NEWLINE") {
+                make_match(kw, subject, col, nl, Vec::new(), nl)
             }
 
         rule stray_indented_block() -> StrayIndentedBlock<'input, 'a>
