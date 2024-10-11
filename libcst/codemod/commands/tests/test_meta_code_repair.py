@@ -25,3 +25,29 @@ class TestRenameCommand(CodemodTest):
         """
 
         self.assertCodemod(before, after)
+
+    def test_stray_script(self) -> None:
+        before = """
+                value: int = 10
+                 print(value)
+        """
+        after = """
+                value: int = 10
+                print(value)
+        """
+
+        self.assertCodemod(before, after)
+
+    def test_nested_stray(self) -> None:
+        before = """
+                value: int = 10
+                 print(value)
+                  print(value)
+        """
+        after = """
+                value: int = 10
+                print(value)
+                print(value)
+        """
+
+        self.assertCodemod(before, after)

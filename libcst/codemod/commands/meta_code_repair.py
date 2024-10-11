@@ -14,10 +14,14 @@ class MetaCodeRepairCommand(Codemod):
     METADATA_DEPENDENCIES: Tuple[ProviderT] = (ParentNodeProvider, PositionProvider,)
 
     def transform_module_impl(self, tree: Module) -> Module:
-        findStrayNodes = FindAllStrayNodes(self.context)
-        tree.visit(findStrayNodes)
-        inlineStrayIndentedBlock = InlineStrayIndentedBlock(
-            self.context,
-            findStrayNodes.dictionary.blocks[0].node,
-        )
-        return tree.visit(inlineStrayIndentedBlock)
+        # TODO: Convert to backtracking fixed point loop
+        for _ in range(2):
+            findStrayNodes = FindAllStrayNodes(self.context)
+            tree.visit(findStrayNodes)
+            if findStrayNodes.dictionary.blocks:
+                inlineStrayIndentedBlock = InlineStrayIndentedBlock(
+                    self.context,
+                    findStrayNodes.dictionary.blocks[0].node,
+                )
+            tree = tree.visit(inlineStrayIndentedBlock)
+        return tree
