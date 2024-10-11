@@ -2841,6 +2841,42 @@ class CSTTypedBaseFunctions:
         pass
 
     @mark_no_op
+    def visit_StrayIndentedBlock(self, node: "StrayIndentedBlock") -> Optional[bool]:
+        pass
+
+    @mark_no_op
+    def visit_StrayIndentedBlock_body(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
+    def leave_StrayIndentedBlock_body(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
+    def visit_StrayIndentedBlock_indent(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
+    def leave_StrayIndentedBlock_indent(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
+    def visit_StrayIndentedBlock_leading_lines(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
+    def leave_StrayIndentedBlock_leading_lines(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
+    def visit_StrayIndentedBlock_footer(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
+    def leave_StrayIndentedBlock_footer(self, node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
     def visit_Index(self, node: "Index") -> Optional[bool]:
         pass
 
@@ -6070,6 +6106,10 @@ class CSTTypedVisitorFunctions(CSTTypedBaseFunctions):
         pass
 
     @mark_no_op
+    def leave_StrayIndentedBlock(self, original_node: "StrayIndentedBlock") -> None:
+        pass
+
+    @mark_no_op
     def leave_Index(self, original_node: "Index") -> None:
         pass
 
@@ -6916,6 +6956,12 @@ class CSTTypedTransformerFunctions(CSTTypedBaseFunctions):
     def leave_IndentedBlock(
         self, original_node: "IndentedBlock", updated_node: "IndentedBlock"
     ) -> "BaseSuite":
+        return updated_node
+
+    @mark_no_op
+    def leave_StrayIndentedBlock(
+        self, original_node: "StrayIndentedBlock", updated_node: "StrayIndentedBlock"
+    ) -> Union["BaseSuite", "StrayIndentedBlock"]:
         return updated_node
 
     @mark_no_op
