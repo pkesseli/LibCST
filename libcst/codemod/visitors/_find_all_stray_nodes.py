@@ -31,6 +31,9 @@ class StrayNodesDictionary:
 
     blocks: list[StrayNodeEntry[StrayIndentedBlock]] = field(default_factory=list)
 
+    def __len__(self):
+        return len(self.blocks)
+
 
 
 class FindAllStrayNodes(ContextAwareVisitor):
