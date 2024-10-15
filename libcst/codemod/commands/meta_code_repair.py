@@ -1,8 +1,8 @@
 from collections import defaultdict, OrderedDict
 from libcst import Module
 from libcst.codemod import Codemod, CodemodContext
-from libcst.codemod.visitors._meta_code_repair_transformer import InlineStrayIndentedBlock
-from libcst.codemod.visitors._find_all_stray_nodes import FindAllStrayNodes
+from libcst.codemod.visitors._meta_code_repair_transformer import AttachCatchToTry, InlineStrayIndentedBlock
+from libcst.codemod.visitors._find_all_stray_nodes import FindAllStrayNodes, StrayNodesDictionary
 from libcst.metadata import ParentNodeProvider, PositionProvider, ProviderT
 from typing import Tuple
 
@@ -26,17 +26,26 @@ class MetaCodeRepairCommand(Codemod):
     def __build_solutions(self, tree: Module, num_steps: int) -> None:
         findStrayNodes = FindAllStrayNodes(self.context)
         tree.visit(findStrayNodes)
-        if len(findStrayNodes.dictionary) == 0:
+        dictionary: StrayNodesDictionary = findStrayNodes.dictionary
+        if len(dictionary) == 0:
             self.solutions[num_steps].append(tree)
             return
 
         num_steps = num_steps + 1
-        if findStrayNodes.dictionary.blocks:
-            inlineStrayIndentedBlock = InlineStrayIndentedBlock(
-                self.context,
-                findStrayNodes.dictionary.blocks[0].node,
-            )
+        if dictionary.excepts:
             self.__build_solutions(
-                tree.visit(inlineStrayIndentedBlock),
+                tree.visit(AttachCatchToTry(
+                    self.context,
+                    dictionary.all_trys,
+                    dictionary.excepts,
+                )),
+                num_steps,
+            )
+        elif dictionary.blocks:
+            self.__build_solutions(
+                tree.visit(InlineStrayIndentedBlock(
+                    self.context,
+                    dictionary.blocks[0].node,
+                )),
                 num_steps,
             )

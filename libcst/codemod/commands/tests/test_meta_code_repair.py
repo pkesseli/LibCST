@@ -51,3 +51,36 @@ class TestRenameCommand(CodemodTest):
         """
 
         self.assertCodemod(before, after)
+
+    def test_stray_except(self) -> None:
+        before = """
+                try:
+                    value: int = 10
+                    except:
+                        pass
+        """
+        after = """
+                try:
+                    value: int = 10
+                except:
+                    pass
+        """
+
+        self.assertCodemod(before, after)
+
+    def test_stray_try(self) -> None:
+        before = """
+                    try:
+                    value: int = 10
+                except:
+                        pass
+        """
+        # TODO: Move statements between try and except to try/except body.
+        after = """
+                try:pass
+                except:
+                        pass
+                value: int = 10
+        """
+
+        self.assertCodemod(before, after)

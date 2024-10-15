@@ -547,12 +547,12 @@ parser! {
         // Try statement
 
         rule try_stmt() -> Try<'input, 'a>
-            = kw:lit("try") lit(":") b:block() f:finally_block()? {
-                make_try(kw, b, vec![], None, f)
-            }
-            / kw:lit("try") lit(":") b:block() ex:except_block()+ el:else_block()?
+            = kw:lit("try") lit(":") b:block() ex:except_block()+ el:else_block()?
                 f:finally_block()? {
                     make_try(kw, b, ex, el, f)
+            }
+            / kw:lit("try") lit(":") b:block() f:finally_block()? {
+                make_try(kw, b, vec![], None, f)
             }
 
         // Note: this is separate because TryStar is a different type in LibCST
