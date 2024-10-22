@@ -71,16 +71,49 @@ class TestRenameCommand(CodemodTest):
     def test_stray_try(self) -> None:
         before = """
                     try:
-                    value: int = 10
+                        value: int = 10
+                    value = 11
+                value = 12
                 except:
                         pass
         """
-        # TODO: Move statements between try and except to try/except body.
+        # TODO: Add case to move statements between try and except to try body?
         after = """
-                try:pass
+                try:
+                    value: int = 10
                 except:
                         pass
-                value: int = 10
+                value = 11
+                value = 12
+        """
+
+        self.assertCodemod(before, after)
+
+    def test_nested_stray_try(self) -> None:
+        before = """
+                if True:
+                    if False:
+                        try:
+                            value: int = 10
+                        value = 11
+                    value = 12
+                value = 13
+            value = 14
+                except:
+                        pass
+        """
+        # TODO: Add case to move statements between try and except to try body?
+        after = """
+                if True:
+                    if False:
+                        try:
+                            value: int = 10
+                        except:
+                                pass
+                        value = 11
+                    value = 12
+                value = 13
+                value = 14
         """
 
         self.assertCodemod(before, after)
