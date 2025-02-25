@@ -61,7 +61,9 @@ class TypeInferenceProvider(BatchableMetadataProvider[str]):
         params = ",".join(f"path='{root_path / path}'" for path in paths)
         cmd_args = ["pyre", "--noninteractive", "query", f"types({params})"]
         try:
-            stdout, stderr, return_code = run_command(cmd_args, timeout=timeout)
+            stdout, stderr, return_code = run_command(
+                root_path, cmd_args, timeout=timeout
+            )
         except subprocess.TimeoutExpired as exc:
             raise exc
 
@@ -105,9 +107,11 @@ class TypeInferenceProvider(BatchableMetadataProvider[str]):
 
 
 def run_command(
-    cmd_args: List[str], timeout: Optional[int] = None
+    root_path: Path, cmd_args: List[str], timeout: Optional[int] = None
 ) -> Tuple[str, str, int]:
-    process = subprocess.run(cmd_args, capture_output=True, timeout=timeout)
+    process = subprocess.run(
+        cmd_args, capture_output=True, timeout=timeout, cwd=root_path
+    )
     return process.stdout.decode(), process.stderr.decode(), process.returncode
 
 
